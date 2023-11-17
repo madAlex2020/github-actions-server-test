@@ -59,7 +59,7 @@ fi
 echo "Listing commits from $PREVIOUS_TAG to $TAG_NAME"
 
 # Extract Jira issue codes and update issues in Jira
-git log ${PREVIOUS_TAG}..${TAG_NAME} --pretty=format:"%s" | grep -oE 'JTD-[0-9]+' | sort | uniq | while read issue; do
+git log ${PREVIOUS_TAG}..${TAG_NAME} --pretty=format:"%s" | grep -oE '[A-Z]+-[0-9]+' | sort | uniq | while read issue; do
     echo "Updating Jira issue: $issue"
     update_jira_issue_to_done "$issue"
 done
