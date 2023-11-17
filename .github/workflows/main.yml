@@ -1,0 +1,23 @@
+name: Update Jira Tickets on Tag Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  update-jira-tickets:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0  # Ensures full Git history is checked out
+
+    - name: Extract Jira Issue Codes
+      run: |
+        chmod +x .github/scripts/extract_jira_issues.sh
+        TAG_NAME=${GITHUB_REF#refs/tags/}
+        echo "Running for tag: $TAG_NAME"
+        .github/scripts/extract_jira_issues.sh $TAG_NAME
