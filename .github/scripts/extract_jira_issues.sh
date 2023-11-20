@@ -1,50 +1,17 @@
 #!/bin/bash
 
 # Jira API credentials - these should be set as environment variables
-JIRA_API_TOKEN=${JIRA_API_TOKEN}
-JIRA_EMAIL=${JIRA_EMAIL}
-JIRA_BASE_URL=${JIRA_BASE_URL}
+JIRA_WEBHOOK=${JIRA_WEBHOOK}
 
-# Function to get the transition ID for moving an issue to DONE
-get_transition_id_to_done() {
+# Function to trigger Jira Automation Webhook
+trigger_jira_automation() {
     local issue_key=$1
 
-    # Fetch transitions for the issue
-    transitions=$(curl -s --request GET \
-        --url "$JIRA_BASE_URL/rest/api/3/issue/$issue_key/transitions" \
-        --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
-        --header 'Content-Type: application/json')
-
-    # Parse the JSON response to find the "DONE" transition ID
-    echo $transitions | jq -r '.transitions[] | select(.name == "Done") | .id'
-}
-
-# Function to update Jira issue to DONE
-update_jira_issue_to_done() {
-    local issue_key=$1
-    local transition_id
-
-    transition_id=$(get_transition_id_to_done "$issue_key")
-
-    if [ -z "$transition_id" ]; then
-        echo "Transition ID to DONE not found for issue $issue_key"
-        return 1
-    fi
-
-    JSON_PAYLOAD=$(cat <<EOF
-    {
-      "transition": {
-        "id": "$transition_id"
-      }
-    }
-EOF
-    )
-
+    # Make a POST request to the Jira Automation Webhook
     curl --request POST \
-      --url "$JIRA_BASE_URL/rest/api/3/issue/$issue_key/transitions" \
-      --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
-      --header 'Content-Type: application/json' \
-      --data "$JSON_PAYLOAD"
+         --url "$WEBHOOK_URL" \
+         --header 'Content-Type: application/json' \
+         --data "{\"issueKey\": \"$issue_key\"}"
 }
 
 # Determine the range of commits to check
@@ -67,6 +34,6 @@ fi
 # Extract Jira issue codes and update issues in Jira
 git log $COMMIT_RANGE --pretty=format:"%s" | grep -oE '[A-Z]+-[0-9]+' | sort | uniq | while read issue; do
     echo "Updating Jira issue: $issue"
-    update_jira_issue_to_done "$issue"
+    trigger_jira_automation "$issue"
 done
 
