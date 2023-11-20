@@ -44,7 +44,7 @@ trigger_jira_automation() {
 }
 
 # Check if there are any issues to update
-if [ ${#issue_keys[@]} -ne 0 ]; then
+if [[ ! -z "${issue_keys[*]}" ]]; then
     echo "Triggering automation for Jira issues"
     trigger_jira_automation
 else
