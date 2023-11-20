@@ -3,11 +3,13 @@
 WEBHOOK_URL=${JIRA_WEBHOOK}
 issue_keys=()
 
-# Determine the range of commits to check based on tags
+
+# Determine the range of commits to check
 TAG_NAME=${GITHUB_REF##*/}
 
 # Fetch all tags and sort them by date
 git fetch --tags
+git tag --sort=-v:refname | grep -A 1 $TAG_NAME | tail -n 1
 PREVIOUS_TAG=$(git tag --sort=-v:refname | grep -A 1 $TAG_NAME | tail -n 1)
 
 if [ -z "$PREVIOUS_TAG" ] || [ "$PREVIOUS_TAG" = "$TAG_NAME" ]; then
@@ -18,9 +20,12 @@ else
     COMMIT_RANGE="${PREVIOUS_TAG}..${TAG_NAME}"
 fi
 
-# Extract Jira issue codes
+
+# Extract Jira issue codes and update issues in Jira
 git log $COMMIT_RANGE --pretty=format:"%s" | grep -oE '[A-Z]+-[0-9]+' | sort | uniq | while read issue; do
+    echo "Updating Jira issue: $issue"
     issue_keys+=("$issue")
+    echo "Issue keys: $issue_keys"
 done
 
 # Function to trigger Jira Automation Webhook
