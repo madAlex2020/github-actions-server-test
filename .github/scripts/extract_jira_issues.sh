@@ -47,19 +47,8 @@ EOF
       --data "$JSON_PAYLOAD"
 }
 
-# Git tags (assumed to be passed into the script)
-TAG_NAME=$1
-PREVIOUS_TAG=$(git tag --sort=-creatordate | grep -B 1 ${TAG_NAME} | head -n 1)
-
-if [ -z "$PREVIOUS_TAG" ] || [ "$PREVIOUS_TAG" = "$TAG_NAME" ]; then
-    echo "No previous tag found or previous tag is the same as current tag. Exiting."
-    exit 1
-fi
-
-echo "Listing commits from $PREVIOUS_TAG to $TAG_NAME"
-
-# Extract Jira issue codes and update issues in Jira
-git log ${PREVIOUS_TAG}..${TAG_NAME} --pretty=format:"%s" | grep -oE '[A-Z]+-[0-9]+' | sort | uniq | while read issue; do
+# Extract Jira issue codes from all commits and update issues in Jira
+git log --pretty=format:"%s" | grep -oE '[A-Z]+-[0-9]+' | sort | uniq | while read issue; do
     echo "Updating Jira issue: $issue"
     update_jira_issue_to_done "$issue"
 done
