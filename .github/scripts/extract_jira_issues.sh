@@ -49,10 +49,10 @@ EOF
 
 # Git tags (assumed to be passed into the script)
 TAG_NAME=$1
-PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${TAG_NAME}^)
+PREVIOUS_TAG=$(git tag --sort=-creatordate | grep -B 1 ${TAG_NAME} | head -n 1)
 
-if [ -z "$PREVIOUS_TAG" ]; then
-    echo "No previous tag found. Exiting."
+if [ -z "$PREVIOUS_TAG" ] || [ "$PREVIOUS_TAG" = "$TAG_NAME" ]; then
+    echo "No previous tag found or previous tag is the same as current tag. Exiting."
     exit 1
 fi
 
