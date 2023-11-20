@@ -9,7 +9,7 @@ trigger_jira_automation() {
 
     # Make a POST request to the Jira Automation Webhook
     curl --request POST \
-         --url "$WEBHOOK_URL" \
+         --url "$JIRA_WEBHOOK" \
          --header 'Content-Type: application/json' \
          --data "{\"issueKey\": \"$issue_key\"}"
 }
