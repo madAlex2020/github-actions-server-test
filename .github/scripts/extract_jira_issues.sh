@@ -21,12 +21,12 @@ else
 fi
 
 
-# Extract Jira issue codes and update issues in Jira
-git log $COMMIT_RANGE --pretty=format:"%s" | grep -oE '[A-Z]+-[0-9]+' | sort | uniq | while read issue; do
+# Extract Jira issue codes
+while read issue; do
     echo "Updating Jira issue: $issue"
     issue_keys+=("$issue")
-    echo "Issue keys: $issue_keys"
-done
+    echo "Issue keys: ${issue_keys[@]}"
+done < <(git log $COMMIT_RANGE --pretty=format:"%s" | grep -oE '[A-Z]+-[0-9]+' | sort | uniq)
 
 # Function to trigger Jira Automation Webhook
 trigger_jira_automation() {
