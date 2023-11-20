@@ -19,5 +19,5 @@ jobs:
           fetch-depth: 0
 
       - name: Extract Jira Issue Codes and Update Issues
-        run: .github/scripts/update_jira_issues.sh
+        run: .github/scripts/extract_jira_issues.sh
 
