@@ -48,10 +48,14 @@ EOF
 }
 
 # Determine the range of commits to check
-TAG_NAME=$1
-PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${TAG_NAME}^)
+TAG_NAME=${GITHUB_REF##*/}
 
-if [ -z "$PREVIOUS_TAG" ]; then
+# Fetch all tags and sort them by date
+git fetch --tags
+git tag --sort=-v:refname | grep -A 1 $TAG_NAME | tail -n 1
+PREVIOUS_TAG=$(git tag --sort=-v:refname | grep -A 1 $TAG_NAME | tail -n 1)
+
+if [ -z "$PREVIOUS_TAG" ] || [ "$PREVIOUS_TAG" = "$TAG_NAME" ]; then
     echo "No previous tag found. Examining all commits."
     COMMIT_RANGE=''
 else
@@ -59,8 +63,10 @@ else
     COMMIT_RANGE="${PREVIOUS_TAG}..${TAG_NAME}"
 fi
 
+
 # Extract Jira issue codes and update issues in Jira
 git log $COMMIT_RANGE --pretty=format:"%s" | grep -oE '[A-Z]+-[0-9]+' | sort | uniq | while read issue; do
     echo "Updating Jira issue: $issue"
     update_jira_issue_to_done "$issue"
 done
+
