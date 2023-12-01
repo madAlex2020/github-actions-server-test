@@ -1,20 +1,39 @@
 #!/bin/bash
 
-# Declare associative arrays for each issue type
-declare -A issue_lists
-issue_lists["IP"]=()
-issue_lists["JTD"]=()
-issue_lists["LDST"]=()
+# Initialize arrays for each issue type
+IP_issues=()
+JTD_issues=()
+LDST_issues=()
+
+# Function to add issues to respective arrays
+add_issue() {
+    local issue_type="$1"
+    local issue="$2"
+
+    case "$issue_type" in
+        "IP")
+            IP_issues+=("$issue")
+            ;;
+        "JTD")
+            JTD_issues+=("$issue")
+            ;;
+        "LDST")
+            LDST_issues+=("$issue")
+            ;;
+        *)
+            echo "No webhook configured for this issue type: $issue"
+            ;;
+    esac
+}
 
 # Function to trigger Jira Automation Webhook
 trigger_jira_automation() {
-    local issues=("${!1}")
-    local webhook_url_var="JIRA_WEBHOOK_$2"
-    local webhook_url="${!webhook_url_var}"
+    local issues=("$@")
+    local webhook_url="${!#}"
 
     if [[ ${#issues[@]} -gt 0 ]]; then
-        local issues_json=$(printf '"%s",' "${issues[@]}" | sed 's/,$//')
-        issues_json="[$issues_json]"
+        local issues_json=$(printf '"%s",' "${issues[@]}")
+        issues_json="[${issues_json%,}]"
 
         local payload="{\"issues\": $issues_json}"
 
@@ -40,20 +59,8 @@ else
     echo "No previous tag found. Examining all commits."
 fi
 
-# Extract and categorize issues
-git log "$COMMIT_RANGE" --pretty=format:"%s" | grep -oE '[A-Z]+-[0-9]+' | sort | uniq | while read -r issue; do
-    case "${issue%%-*}" in
-        "IP"|"JTD"|"LDST")
-            issue_type="${issue%%-*}"
-            issue_lists["$issue_type"]+=("$issue")
-            ;;
-        *)
-            echo "No webhook configured for this issue type: $issue"
-            ;;
-    esac
-done
+# Trigger webhooks for each list of issues
+[[ ${#IP_issues[@]} -gt 0 ]] && trigger_jira_automation "${IP_issues[@]}" "$JIRA_WEBHOOK_IP"
+[[ ${#JTD_issues[@]} -gt 0 ]] && trigger_jira_automation "${JTD_issues[@]}" "$JIRA_WEBHOOK_JTD"
+[[ ${#LDST_issues[@]} -gt 0 ]] && trigger_jira_automation "${LDST_issues[@]}" "$JIRA_WEBHOOK_LDST"
 
-# Trigger webhooks for each issue list
-for project_key in "${!issue_lists[@]}"; do
-    trigger_jira_automation "issue_lists[$project_key][@]" "$project_key"
-done
