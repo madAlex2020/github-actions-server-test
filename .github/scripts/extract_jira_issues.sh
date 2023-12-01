@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -x
 # Initialize variables for each issue type
 IP_issues=""
 JTD_issues=""
