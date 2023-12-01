@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Declare associative arrays for each issue type
 declare -A issue_lists
 issue_lists["IP"]=()
 issue_lists["JTD"]=()
@@ -8,7 +9,8 @@ issue_lists["LDST"]=()
 # Function to trigger Jira Automation Webhook
 trigger_jira_automation() {
     local issues=("${!1}")
-    local webhook_url="$2"
+    local webhook_url_var="JIRA_WEBHOOK_$2"
+    local webhook_url="${!webhook_url_var}"
 
     if [[ ${#issues[@]} -gt 0 ]]; then
         local issues_json=$(printf '"%s",' "${issues[@]}" | sed 's/,$//')
@@ -38,17 +40,12 @@ else
     echo "No previous tag found. Examining all commits."
 fi
 
-# Extract Jira issue codes and decide which webhook to use
+# Extract and categorize issues
 git log "$COMMIT_RANGE" --pretty=format:"%s" | grep -oE '[A-Z]+-[0-9]+' | sort | uniq | while read -r issue; do
     case "${issue%%-*}" in
-        "IP")
-            issue_lists["IP"]+=("$issue")
-            ;;
-        "JTD")
-            issue_lists["JTD"]+=("$issue")
-            ;;
-        "LDST")
-            issue_lists["LDST"]+=("$issue")
+        "IP"|"JTD"|"LDST")
+            issue_type="${issue%%-*}"
+            issue_lists["$issue_type"]+=("$issue")
             ;;
         *)
             echo "No webhook configured for this issue type: $issue"
@@ -58,15 +55,5 @@ done
 
 # Trigger webhooks for each issue list
 for project_key in "${!issue_lists[@]}"; do
-    case "$project_key" in
-        "IP")
-            trigger_jira_automation issue_lists["IP"][@] "${JIRA_WEBHOOK_IP}"
-            ;;
-        "JTD")
-            trigger_jira_automation issue_lists["JTD"][@] "${JIRA_WEBHOOK_JTD}"
-            ;;
-        "LDST")
-            trigger_jira_automation issue_lists["LDST"][@] "${JIRA_WEBHOOK_LDST}"
-            ;;
-    esac
+    trigger_jira_automation "issue_lists[$project_key][@]" "$project_key"
 done
