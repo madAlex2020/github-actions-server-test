@@ -1,24 +1,24 @@
 #!/bin/bash
 
-# Initialize arrays for each issue type
-IP_issues=()
-JTD_issues=()
-LDST_issues=()
+# Initialize variables for each issue type
+IP_issues=""
+JTD_issues=""
+LDST_issues=""
 
-# Function to add issues to respective arrays
+# Function to add issues to respective variables
 add_issue() {
     local issue_type="$1"
     local issue="$2"
 
     case "$issue_type" in
         "IP")
-            IP_issues+=("$issue")
+            IP_issues="$IP_issues $issue"
             ;;
         "JTD")
-            JTD_issues+=("$issue")
+            JTD_issues="$JTD_issues $issue"
             ;;
         "LDST")
-            LDST_issues+=("$issue")
+            LDST_issues="$LDST_issues $issue"
             ;;
         *)
             echo "No webhook configured for this issue type: $issue"
@@ -28,14 +28,12 @@ add_issue() {
 
 # Function to trigger Jira Automation Webhook
 trigger_jira_automation() {
-    local issues=("$@")
-    local webhook_url="${!#}"
+    local issues="$1"
+    local webhook_url="$2"
 
-    if [[ ${#issues[@]} -gt 0 ]]; then
-        local issues_json=$(printf '"%s",' "${issues[@]}")
-        issues_json="[${issues_json%,}]"
-
-        local payload="{\"issues\": $issues_json}"
+    if [ -n "$issues" ]; then
+        issues_json="[\"$issues\"]"
+        payload="{\"issues\": $issues_json}"
 
         curl --request POST \
              --url "$webhook_url" \
@@ -60,7 +58,7 @@ else
 fi
 
 # Trigger webhooks for each list of issues
-[[ ${#IP_issues[@]} -gt 0 ]] && trigger_jira_automation "${IP_issues[@]}" "$JIRA_WEBHOOK_IP"
-[[ ${#JTD_issues[@]} -gt 0 ]] && trigger_jira_automation "${JTD_issues[@]}" "$JIRA_WEBHOOK_JTD"
-[[ ${#LDST_issues[@]} -gt 0 ]] && trigger_jira_automation "${LDST_issues[@]}" "$JIRA_WEBHOOK_LDST"
+[ -n "$IP_issues" ] && trigger_jira_automation "$IP_issues" "$JIRA_WEBHOOK_IP"
+[ -n "$JTD_issues" ] && trigger_jira_automation "$JTD_issues" "$JIRA_WEBHOOK_JTD"
+[ -n "$LDST_issues" ] && trigger_jira_automation "$LDST_issues" "$JIRA_WEBHOOK_LDST"
 
