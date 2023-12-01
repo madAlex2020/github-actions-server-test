@@ -4,12 +4,13 @@ on:
   push:
     tags:
       - '*'
-
 jobs:
   update-jira-tickets:
     runs-on: ubuntu-latest
     env:
-      JIRA_WEBHOOK: ${{ secrets.JIRA_WEBHOOK }}
+      JIRA_WEBHOOK_IP: ${{ secrets.JIRA_WEBHOOK_IP }}
+      JIRA_WEBHOOK_JTD: ${{ secrets.JIRA_WEBHOOK_JTD }}
+      JIRA_WEBHOOK_LDST: ${{ secrets.JIRA_WEBHOOK_LDST }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
