@@ -1,12 +1,11 @@
-#!/bin/bash
+#!/bin/sh
 
-set -x
-# Initialize variables for each issue type
+# Initialize arrays for each issue type
 IP_issues=""
 JTD_issues=""
 LDST_issues=""
 
-# Function to add issues to respective variables
+# Function to add issues to respective arrays
 add_issue() {
     local issue_type="$1"
     local issue="$2"
@@ -27,14 +26,14 @@ add_issue() {
     esac
 }
 
-# Function to trigger Jira Automation Webhook
-trigger_jira_automation() {
+# Function to trigger Jira Automation Webhook for a list of issues
+trigger_jira_automation_bulk() {
     local issues="$1"
     local webhook_url="$2"
 
     if [ -n "$issues" ]; then
-        issues_json="[\"$issues\"]"
-        payload="{\"issues\": $issues_json}"
+        local issues_json="[\"$issues\"]"
+        local payload="{\"issues\": $issues_json}"
 
         curl --request POST \
              --url "$webhook_url" \
@@ -44,22 +43,40 @@ trigger_jira_automation() {
 }
 
 # Determine the range of commits to check
-TAG_NAME=${GITHUB_REF##*/}
+TAG_NAME="${GITHUB_REF##*/}"
 
 # Fetch all tags and sort them by date
 git fetch --tags
 PREVIOUS_TAG=$(git tag --sort=-v:refname | grep -A 1 "$TAG_NAME" | tail -n 1)
 
 COMMIT_RANGE=''
-if [[ -n "$PREVIOUS_TAG" ]] && [[ "$PREVIOUS_TAG" != "$TAG_NAME" ]]; then
+
+if [ -n "$PREVIOUS_TAG" ] && [ "$PREVIOUS_TAG" != "$TAG_NAME" ]; then
     echo "Examining commits from $PREVIOUS_TAG to $TAG_NAME"
     COMMIT_RANGE="${PREVIOUS_TAG}..${TAG_NAME}"
 else
     echo "No previous tag found. Examining all commits."
 fi
 
-# Trigger webhooks for each list of issues
-[ -n "$IP_issues" ] && trigger_jira_automation "$IP_issues" "$JIRA_WEBHOOK_IP"
-[ -n "$JTD_issues" ] && trigger_jira_automation "$JTD_issues" "$JIRA_WEBHOOK_JTD"
-[ -n "$LDST_issues" ] && trigger_jira_automation "$LDST_issues" "$JIRA_WEBHOOK_LDST"
+# Extract Jira issue codes and decide which array to use
+git log "$COMMIT_RANGE" --pretty=format:"%s" | grep -oE '[A-Z]+-[0-9]+' | sort | uniq | while read -r issue; do
+    case "${issue%%-*}" in
+        "IP")
+            add_issue "IP" "$issue"
+            ;;
+        "JTD")
+            add_issue "JTD" "$issue"
+            ;;
+        "LDST")
+            add_issue "LDST" "$issue"
+            ;;
+        *)
+            echo "No webhook configured for this issue type: $issue"
+            ;;
+    esac
+done
 
+# Trigger webhooks for each list of issues
+trigger_jira_automation_bulk "$IP_issues" "$JIRA_WEBHOOK_IP"
+trigger_jira_automation_bulk "$JTD_issues" "$JIRA_WEBHOOK_JTD"
+trigger_jira_automation_bulk "$LDST_issues" "$JIRA_WEBHOOK_LDST"
