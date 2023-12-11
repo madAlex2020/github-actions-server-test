@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -x
+
 # Function to trigger Jira Automation Webhook in bulk
 trigger_jira_automation_bulk() {
     local webhook_url="$1"
@@ -14,6 +16,7 @@ trigger_jira_automation_bulk() {
 
 # Determine the range of commits to check
 TAG_NAME=${GITHUB_REF##*/}
+
 
 # Fetch all tags and sort them by date
 git fetch --tags
