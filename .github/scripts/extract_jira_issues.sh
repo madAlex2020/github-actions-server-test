@@ -66,6 +66,6 @@ for issue in $(git log "$COMMIT_RANGE" --pretty=format:"%s" | grep -oE '[A-Z]+-[
 done
 
 # Trigger webhooks for each board key and its issues in bulk
-[ -n "$IP_issues" ] && trigger_jira_automation_bulk "$JIRA_WEBHOOK_IP" "$IP_issues"
-[ -n "$JTD_issues" ] && trigger_jira_automation_bulk "$JIRA_WEBHOOK_JTD" "$JTD_issues"
-[ -n "$LDST_issues" ] && trigger_jira_automation_bulk "$JIRA_WEBHOOK_LDST" "$LDST_issues"
+[ -n "$IP_issues" ] && trigger_jira_automation_bulk "$JIRA_WEBHOOK_IP" "{\"issues\": [\"$IP_issues\"]}"
+[ -n "$JTD_issues" ] && trigger_jira_automation_bulk "$JIRA_WEBHOOK_JTD" "{\"issues\": [\"$JTD_issues\"]}"
+[ -n "$LDST_issues" ] && trigger_jira_automation_bulk "$JIRA_WEBHOOK_LDST" "{\"issues\": [\"$LDST_issues\"]}"
